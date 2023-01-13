@@ -1,14 +1,32 @@
 package jwt
 
 import (
+	"PartnerPal/pkg/response"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"strings"
 	"time"
 )
 
 var accessTokenSecret = []byte("accessTokenSecret")
 var refreshTokenSecret = []byte("refreshTokenSecret")
+
+const (
+	Minute30 = 30 * time.Minute
+	OneWeek  = 7 * 24 * time.Hour
+)
+
+type RefreshAtAndRt struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type User struct {
+	UserName string `json:"userName"`
+	PassWord string `json:"passWord"`
+}
 
 type Claims struct {
 	UserName string
@@ -20,8 +38,8 @@ type Claims struct {
 //accessTokenString(AT)，refreshTokenString(RT).
 //当AT失效且RT有效时才会重新生产AT,RT.当AT和RT都失效时才会让用户重新登录.当AT未失效不会使用到RT.
 func GenerateToken(userName, passWord string) (string, string, error) {
-	shortExpireTime := time.Now().Add(30 * time.Minute)
-	longExpireTime := time.Now().Add(7 * 24 * time.Hour)
+	shortExpireTime := time.Now().Add(Minute30)
+	longExpireTime := time.Now().Add(OneWeek)
 	accessTokenClaims := &Claims{
 		UserName: userName,
 		PassWord: passWord,
@@ -61,6 +79,85 @@ func GenerateToken(userName, passWord string) (string, string, error) {
 }
 
 // ParseToken 解析Token
-func ParseToken(ctx *gin.Context) {
+func ParseToken(accessTokenString, refreshTokenString string) (*Claims, bool, error) {
+	fmt.Println("In ParseToken")
+	accessToken, err := jwt.ParseWithClaims(accessTokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return accessTokenSecret, nil
+	})
+	if claims, ok := accessToken.Claims.(*Claims); ok && accessToken.Valid {
+		return claims, false, nil
+	}
+	fmt.Println("RefreshToken")
+	refreshToken, err := jwt.ParseWithClaims(refreshTokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return refreshTokenSecret, nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	if claims, ok := refreshToken.Claims.(*Claims); ok && refreshToken.Valid {
+		return claims, true, nil
+	}
 
+	return nil, false, errors.New("invalid token")
+}
+
+func authHandler(ctx *gin.Context) {
+	fmt.Println("In authHandler")
+	var user User
+	err := ctx.ShouldBind(&user)
+	if err != nil {
+		response.JsonMessage(ctx, 1001, "请求头中Auth为空")
+		return
+	}
+	fmt.Println("user = ", user)
+	if !(user.UserName == "ar" && user.PassWord == "123456") {
+		response.JsonMessage(ctx, 1002, "请求头中Auth为空")
+		fmt.Println("User not exist or password error")
+		return
+	}
+	accessTokenString, refreshTokenString, _ := GenerateToken(user.UserName, user.PassWord)
+	response.JsonSuccess(ctx, RefreshAtAndRt{
+		AccessToken:  accessTokenString,
+		RefreshToken: refreshTokenString,
+	})
+
+}
+
+// AuthMiddleware 用鉴权到中间件
+func AuthMiddleware() func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		// 默认双Token放在请求头Authorization的Bearer中，并以空格隔开
+		authHeader := ctx.Request.Header.Get("Authorization")
+		if authHeader == "" {
+			response.JsonMessage(ctx, 1002, "请求头中Auth为空")
+			return
+		}
+		fmt.Println("authHeader = ", authHeader)
+		parts := strings.Split(authHeader, " ")
+		fmt.Println("len = ", len(parts))
+		fmt.Println("parts[0] = ", parts[0])
+		if !(len(parts) == 3 && parts[0] == "Bearer") {
+			response.JsonMessage(ctx, 1003, "请求头中Auth格式有误")
+			return
+		}
+		parseToken, isUpd, err := ParseToken(parts[1], parts[2])
+		if err != nil {
+			response.JsonMessage(ctx, 1004, "无效的Token")
+			return
+		}
+		// AT失效，刷新双AT,RT
+		if isUpd {
+			parts[1], parts[2], err = GenerateToken(parseToken.UserName, parseToken.PassWord)
+			if err != nil {
+				response.JsonMessage(ctx, 1005, "获取令牌失败")
+				return
+			}
+			response.JsonSuccess(ctx, RefreshAtAndRt{
+				AccessToken:  parts[1],
+				RefreshToken: parts[2],
+			})
+			ctx.Set("userName", parseToken.UserName)
+			ctx.Next()
+		}
+	}
 }

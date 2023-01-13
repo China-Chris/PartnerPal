@@ -2,11 +2,25 @@ package routers
 
 import (
 	"PartnerPal/middleware"
+	"PartnerPal/pkg/response"
+	"PartnerPal/service"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/swag/example/basic/docs"
 )
+
+// @BasePath /api/v1
+
+// PingExample godoc
+// @Summary ping example
+// @Schemes
+// @Description do ping
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /example/helloworld [get]
 
 // InitRouter 初始化路由
 func InitRouter(router *gin.Engine) {
@@ -16,10 +30,14 @@ func InitRouter(router *gin.Engine) {
 	router.Use(middleware.Cors())
 	// 定义根路径服务启动状态检测
 	router.HEAD("/head", func(ctx *gin.Context) {
-		//tools.JsonSuccess(ctx, nil)
+		response.JsonSuccess(ctx, nil)
 	})
 	docs.SwaggerInfo.BasePath = "/api"
 	// 定义api路由分组
-	//nft := router.Group("/nft")
+	app := router.Group("/app")
+	text := app.Group("/User")
+	{
+		text.GET("/text", service.Login)
+	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 }

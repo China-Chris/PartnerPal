@@ -24,7 +24,7 @@ type RefreshAtAndRt struct {
 }
 
 type User struct {
-	UserName string `json:"userName"`
+	Phone    string `json:"phone"`
 	PassWord string `json:"passWord"`
 }
 
@@ -110,54 +110,51 @@ func authHandler(ctx *gin.Context) {
 		return
 	}
 	fmt.Println("user = ", user)
-	if !(user.UserName == "ar" && user.PassWord == "123456") {
+	if !(user.Phone == "ar" && user.PassWord == "123456") {
 		response.JsonMessage(ctx, 1002, "请求头中Auth为空")
 		fmt.Println("User not exist or password error")
 		return
 	}
-	accessTokenString, refreshTokenString, _ := GenerateToken(user.UserName, user.PassWord)
+	accessTokenString, refreshTokenString, _ := GenerateToken(user.Phone, user.PassWord)
 	response.JsonSuccess(ctx, RefreshAtAndRt{
 		AccessToken:  accessTokenString,
 		RefreshToken: refreshTokenString,
 	})
-
 }
 
 // AuthMiddleware 用鉴权到中间件
-func AuthMiddleware() func(ctx *gin.Context) {
-	return func(ctx *gin.Context) {
-		// 默认双Token放在请求头Authorization的Bearer中，并以空格隔开
-		authHeader := ctx.Request.Header.Get("Authorization")
-		if authHeader == "" {
-			response.JsonMessage(ctx, 1002, "请求头中Auth为空")
-			return
-		}
-		fmt.Println("authHeader = ", authHeader)
-		parts := strings.Split(authHeader, " ")
-		fmt.Println("len = ", len(parts))
-		fmt.Println("parts[0] = ", parts[0])
-		if !(len(parts) == 3 && parts[0] == "Bearer") {
-			response.JsonMessage(ctx, 1003, "请求头中Auth格式有误")
-			return
-		}
-		parseToken, isUpd, err := ParseToken(parts[1], parts[2])
+func AuthMiddleware(ctx *gin.Context) {
+	// 默认双Token放在请求头Authorization的Bearer中，并以空格隔开
+	authHeader := ctx.Request.Header.Get("Authorization")
+	if authHeader == "" {
+		response.JsonMessage(ctx, 1002, "请求头中Auth为空")
+		return
+	}
+	fmt.Println("authHeader = ", authHeader)
+	parts := strings.Split(authHeader, " ")
+	fmt.Println("len = ", len(parts))
+	fmt.Println("parts[0] = ", parts[0])
+	if !(len(parts) == 3 && parts[0] == "Bearer") {
+		response.JsonMessage(ctx, 1003, "请求头中Auth格式有误")
+		return
+	}
+	parseToken, isUpd, err := ParseToken(parts[1], parts[2])
+	if err != nil {
+		response.JsonMessage(ctx, 1004, "无效的Token")
+		return
+	}
+	// AT失效，刷新双AT,RT
+	if isUpd {
+		parts[1], parts[2], err = GenerateToken(parseToken.UserName, parseToken.PassWord)
 		if err != nil {
-			response.JsonMessage(ctx, 1004, "无效的Token")
+			response.JsonMessage(ctx, 1005, "获取令牌失败")
 			return
 		}
-		// AT失效，刷新双AT,RT
-		if isUpd {
-			parts[1], parts[2], err = GenerateToken(parseToken.UserName, parseToken.PassWord)
-			if err != nil {
-				response.JsonMessage(ctx, 1005, "获取令牌失败")
-				return
-			}
-			response.JsonSuccess(ctx, RefreshAtAndRt{
-				AccessToken:  parts[1],
-				RefreshToken: parts[2],
-			})
-			ctx.Set("userName", parseToken.UserName)
-			ctx.Next()
-		}
+		response.JsonSuccess(ctx, RefreshAtAndRt{
+			AccessToken:  parts[1],
+			RefreshToken: parts[2],
+		})
+		ctx.Set("userName", parseToken.UserName)
+		ctx.Next()
 	}
 }

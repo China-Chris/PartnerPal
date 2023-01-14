@@ -23,3 +23,13 @@ type User struct {
 func (t User) TableName() string {
 	return "user"
 }
+
+type LoginRecord struct {
+	gorm.Model
+	UserId    uint      `gorm:"not null"` //用户表ID
+	LoginTime time.Time `gorm:"not null"` //最后登陆时间
+}
+
+//func (t LoginRecord) TableName() string {
+//
+//}

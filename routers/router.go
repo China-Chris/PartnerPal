@@ -1,11 +1,12 @@
 package routers
 
 import (
+	"PartnerPal/controller"
 	"PartnerPal/middleware"
+	"PartnerPal/middleware/jwt"
 	"PartnerPal/pkg/response"
-	"PartnerPal/service"
 	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/swag/example/basic/docs"
 )
@@ -19,8 +20,8 @@ import (
 // @Tags example
 // @Accept json
 // @Produce json
-// @Success 200 {string} Helloworld
-// @Router /example/helloworld [get]
+// @Success 200 {string}
+// @Router /example/ [get]
 
 // InitRouter 初始化路由
 func InitRouter(router *gin.Engine) {
@@ -35,9 +36,10 @@ func InitRouter(router *gin.Engine) {
 	docs.SwaggerInfo.BasePath = "/api"
 	// 定义api路由分组
 	app := router.Group("/app")
-	text := app.Group("/User")
+	user := app.Group("/user")
 	{
-		text.GET("/text", service.Login)
+		user.GET("/login", jwt.AuthMiddleware, controller.Login) //登陆
+		user.POST("signup", controller.SignUp)                   //注册
 	}
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

@@ -10,7 +10,7 @@ import (
 // db 全局MySQL数据库操作对象
 var db *gorm.DB
 
-//链接数据库
+//InitMysql 链接数据库
 func InitMysql() {
 	cfg := configs.Config().Mysql
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",

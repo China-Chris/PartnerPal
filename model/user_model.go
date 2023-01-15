@@ -30,6 +30,6 @@ type LoginRecord struct {
 	LoginTime time.Time `gorm:"not null"` //最后登陆时间
 }
 
-//func (t LoginRecord) TableName() string {
-//
-//}
+func (t LoginRecord) TableName() string {
+	return "login_record"
+}

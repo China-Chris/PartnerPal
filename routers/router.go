@@ -39,7 +39,7 @@ func InitRouter(router *gin.Engine) {
 	user := app.Group("/user")
 	{
 		user.GET("/login", jwt.AuthMiddleware, controller.Login) //登陆
-		user.POST("signup", controller.SignUp)                   //注册
+		user.POST("/signUp", controller.SignUp)                  //注册
 	}
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

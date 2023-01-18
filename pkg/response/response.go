@@ -23,7 +23,7 @@ func JsonMessage(ctx *gin.Context, code uint32, msg string) {
 	ctx.Status(http.StatusOK)
 	ctx.JSON(http.StatusOK, Data{
 		Code: code,
-		Msg:  "success",
+		Msg:  msg,
 	})
 	ctx.Abort()
 }

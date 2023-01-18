@@ -33,7 +33,7 @@ func main() {
 		r.Use(gin.Logger())
 	}
 	routers.InitRouter(r)                                 //初始化路由
-	address := fmt.Sprintf("%s:%d", "0.0.0.0", 9999)      //拼接监听地址
+	address := fmt.Sprintf("%s:%d", "0.0.0.0", 8888)      //拼接监听地址
 	logs.Info("HTTP服务将在以下地址开启监听：\"https://%s\"", address) //记录启动日志
 	if err := r.Run(address); err != nil {                //启动服务
 		logs.Error("HTTP服务启动失败")

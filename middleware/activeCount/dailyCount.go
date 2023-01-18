@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// DailyActiveCount 日活统计中间件
 func DailyActiveCount(ctx gin.Context) {
 	//获取当前日期
 	now := time.Now()

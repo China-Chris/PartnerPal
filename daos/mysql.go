@@ -13,7 +13,7 @@ var db *gorm.DB
 //InitMysql 链接数据库
 func InitMysql() {
 	cfg := configs.Config().Mysql
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&log=true&slow_query_log=1s",
 		cfg.User, cfg.Password, cfg.Ip, cfg.Port, cfg.DbName)
 	var err error
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})

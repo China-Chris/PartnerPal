@@ -1,7 +1,7 @@
 package controller
 
 import (
-	errorss "PartnerPal/pkg/errors"
+	"PartnerPal/pkg/errorss/errors_const"
 	"PartnerPal/pkg/request"
 	"PartnerPal/pkg/response"
 	"PartnerPal/service/user"
@@ -15,21 +15,21 @@ func Login(ctx *gin.Context) {
 
 // SignUp 用户注册
 func SignUp(ctx *gin.Context) {
-	var signUp request.SignUp
-	err := ctx.ShouldBind(&signUp)
+	var signUp request.RqSignUp
+	err := ctx.ShouldBindJSON(&signUp)
 	if err != nil {
-		response.JsonFailData(ctx, errorss.ErrInternalServer, errorss.HandleError(errorss.ErrInternalServer, err))
+		response.JsonFailMessage(ctx, errors_const.ErrInternalServer, err)
 		return
 	}
 	checkMobile := user.CheckMobile(signUp.Phone)
 	if !checkMobile {
-		response.JsonFailData(ctx, errorss.ErrInternalServer, errorss.HandleError(errorss.ErrCheckMobile, err))
+		response.JsonFailMessage(ctx, errors_const.ErrCheckMobile, err)
 		return
 	}
-	_, err = user.SignUp(signUp)
+	date, err := user.SignUp(signUp)
 	if err != nil {
-		response.JsonFailData(ctx, errorss.ErrInternalServer, errorss.HandleError(errorss.ErrSignUp, err))
+		response.JsonFailMessage(ctx, errors_const.ErrSignUp, err)
 		return
 	}
-	response.JsonSuccess(ctx, nil)
+	response.JsonSuccess(ctx, date)
 }

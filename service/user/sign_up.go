@@ -1,7 +1,11 @@
 package user
 
 import (
+	"PartnerPal/middleware/jwt"
+	"PartnerPal/pkg/errorss"
+	"PartnerPal/pkg/errorss/errors_const"
 	"PartnerPal/pkg/request"
+	"PartnerPal/pkg/response"
 	"github.com/beego/beego/v2/adapter/logs"
 	"regexp"
 )
@@ -13,11 +17,15 @@ func CheckMobile(phone string) bool {
 	if err != nil {
 		panic(err)
 	}
-	return compile.MatchString(phone)
+	return !compile.MatchString(phone)
 }
 
 // SignUp 用户注册
-func SignUp(that request.SignUp) (string, error) {
-	logs.Error(that.Phone)
-	return that.Phone, nil
+func SignUp(that request.RqSignUp) (*response.RpSignUp, error) {
+	logs.Info(that.Phone)
+	accessToken, refreshToken, err := jwt.GenerateToken(that.Phone, that.Password)
+	if err != nil {
+		return nil, errorss.HandleError(errors_const.ErrGenerateToken, "zn", err)
+	}
+	return response.NewRpSignUp(accessToken, refreshToken), nil
 }

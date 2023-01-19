@@ -60,21 +60,18 @@ func GenerateToken(userName, passWord string) (string, string, error) {
 			Subject:   "user token",
 		},
 	}
-
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
 	accessTokenString, err := accessToken.SignedString(accessTokenSecret)
 	if err != nil {
 		fmt.Println(err)
 		return "", "", err
 	}
-
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
 	refreshTokenString, err := refreshToken.SignedString(refreshTokenSecret)
 	if err != nil {
 		fmt.Println(err)
 		return "", "", err
 	}
-
 	return accessTokenString, refreshTokenString, nil
 }
 
@@ -97,7 +94,6 @@ func ParseToken(accessTokenString, refreshTokenString string) (*Claims, bool, er
 	if claims, ok := refreshToken.Claims.(*Claims); ok && refreshToken.Valid {
 		return claims, true, nil
 	}
-
 	return nil, false, errors.New("invalid token")
 }
 
